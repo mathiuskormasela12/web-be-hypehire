@@ -7,37 +7,61 @@ import { type Order } from '@prisma/client'
 class OrderService extends Service {
   public async orderBook (): Promise<IResponse> {
     try {
-      const books = await this.prisma.book.findMany({
-        where: {
-          id: this.body.bookId
-        }
-      })
+      const [books, users] = await Promise.all([
+        this.prisma.book.findMany({
+          where: {
+            id: this.body.bookId
+          }
+        }),
+        this.prisma.user.findMany({
+          where: {
+            id: this.locals.decoded.code
+          }
+        })
+      ])
 
       if (books.length > 0) {
-        try {
-          await this.prisma.order.create({
-            data: {
-              status: ORDER_STATUS.PENDING,
-              userId: this.locals.decoded.code,
-              bookId: this.body.bookId
-            }
-          })
+        if (users?.length > 0 && books[0].price <= users[0].point) {
+          try {
+            await Promise.all([
+              this.prisma.order.create({
+                data: {
+                  status: ORDER_STATUS.PENDING,
+                  userId: this.locals.decoded.code,
+                  bookId: this.body.bookId
+                }
+              }),
+              this.prisma.user.update({
+                where: {
+                  id: this.locals.decoded.code
+                },
+                data: {
+                  point: users[0].point - books[0].price
+                }
+              })
+            ])
 
-          return {
-            statusCode: 200,
-            message: `${books[0].title} book is ordered`
+            return {
+              statusCode: 200,
+              message: `${books[0].title} book is ordered`
+            }
+          } catch (err) {
+            const { message } = err as Error
+            return {
+              statusCode: 500,
+              errors: [message]
+            }
           }
-        } catch (err) {
-          const { message } = err as Error
+        } else {
           return {
-            statusCode: 500,
-            errors: [message]
+            statusCode: 400,
+            message: 'your point is not sufficient'
           }
         }
       } else {
         return {
           statusCode: 400,
-          errors: ['Body is unkown']
+          errors: ['Book is not found']
         }
       }
     } catch (err) {

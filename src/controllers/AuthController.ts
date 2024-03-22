@@ -20,6 +20,12 @@ class AuthController {
     const result = await authService.createToken()
     response(res, result)
   }
+
+  public static async getUser (req: Request, res: Response): Promise<void> {
+    const authService = new AuthService(req)
+    const result = await authService.getUser()
+    response(res, result)
+  }
 }
 
 export default AuthController

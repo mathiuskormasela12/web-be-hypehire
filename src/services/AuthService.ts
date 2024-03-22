@@ -5,6 +5,7 @@ import { type IResponseWithParams, type IResponse } from '@/interfaces/IResponse
 import type IToken from '@/interfaces/IToken'
 import { createJwtToken } from '@/helpers/token'
 import Config from '@/config'
+import { type User } from '@prisma/client'
 
 class AuthService extends Service {
   public async register (): Promise<IResponse> {
@@ -97,6 +98,35 @@ class AuthService extends Service {
           statusCode: 400,
           errors: ['Failed to create token']
         }
+      }
+    } catch (err) {
+      const { message } = err as Error
+
+      return {
+        statusCode: 500,
+        errors: [message]
+      }
+    }
+  }
+
+  public async getUser (): Promise<IResponseWithParams<User>> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: this.locals.decoded.code
+        }
+      })
+
+      if (user) {
+        return {
+          statusCode: 200,
+          data: user
+        }
+      }
+
+      return {
+        statusCode: 400,
+        errors: ['user not found']
       }
     } catch (err) {
       const { message } = err as Error
