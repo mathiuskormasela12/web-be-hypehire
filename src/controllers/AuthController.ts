@@ -1,5 +1,6 @@
 import response from '@/helpers/response'
 import AuthService from '@/services/AuthService'
+import { type User } from '@prisma/client'
 import { type Request, type Response } from 'express'
 
 class AuthController {
@@ -24,7 +25,7 @@ class AuthController {
   public static async getUser (req: Request, res: Response): Promise<void> {
     const authService = new AuthService(req)
     const result = await authService.getUser()
-    response(res, result)
+    response<'IResponseWithParams', User>(res, result)
   }
 }
 

@@ -7,7 +7,7 @@ class AuthRouter extends Router {
     this.router.post('/register', registerAccountMiddleware, AuthController.register)
     this.router.post('/login', loginAccountMiddleware, AuthController.login)
     this.router.post('/token', createTokenMiddleware, AuthController.createToken)
-    this.router.post('/user', isLoginMiddleware, AuthController.getUser)
+    this.router.get('/user', isLoginMiddleware, AuthController.getUser)
   }
 }
 

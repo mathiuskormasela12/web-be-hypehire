@@ -75,21 +75,41 @@ class OrderService extends Service {
 
   public async cancelOrder (): Promise<IResponse> {
     try {
-      const order = await this.prisma.order.findUnique({
-        where: {
-          id: this.params.id
-        }
-      })
-
-      if (order) {
-        await this.prisma.order.update({
+      const [order, user] = await Promise.all([
+        this.prisma.order.findUnique({
           where: {
             id: this.params.id
           },
-          data: {
-            status: ORDER_STATUS.CANCELED
+          include: {
+            book: true
+          }
+        }),
+        this.prisma.user.findUnique({
+          where: {
+            id: this.locals.decoded.code
           }
         })
+      ])
+
+      if (order && user) {
+        await Promise.all([
+          this.prisma.order.update({
+            where: {
+              id: this.params.id
+            },
+            data: {
+              status: ORDER_STATUS.CANCELED
+            }
+          }),
+          this.prisma.user.update({
+            where: {
+              id: this.locals.decoded.code
+            },
+            data: {
+              point: user.point + order.book.price
+            }
+          })
+        ])
 
         return {
           statusCode: 200,
